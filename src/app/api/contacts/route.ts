@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs'
 
 export async function GET() {
-  // Ovdje biste normalno dohvaćali podatke iz baze
-  const contacts = [
-    { id: 1, name: 'John Doe', email: 'john@example.com' },
-    { id: 2, name: 'Jane Doe', email: 'jane@example.com' },
-  ];
-  return NextResponse.json(contacts);
+  const { userId } = auth()
+  if (!userId) {
+    return new NextResponse("Unauthorized", { status: 401 })
+  }
+  // Implementirajte logiku za dohvaćanje kontakata
 }
