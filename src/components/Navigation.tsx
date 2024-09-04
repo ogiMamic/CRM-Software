@@ -1,32 +1,55 @@
-'use client';
+"use client"
 
 import Link from 'next/link'
-import { UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs"
+import { ModeToggle } from "./mode-toggle"
+import { Button } from "@/components/ui/button"
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 
 export function Navigation() {
+  const showToast = () => {
+    toast("This is a toast notification", {
+      description: "You can customize this message",
+      action: {
+        label: "Undo",
+        onClick: () => console.log("Undo"),
+      },
+    })
+  }
+
   return (
-    <nav className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              CRM Software
-            </Link>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link href="/dashboard" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                Dashboard
+    <>
+      <nav className="border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center">
+              <Link href="/" className="text-2xl font-bold text-primary">
+                CRM Software
               </Link>
-              <Link href="/newsletter" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                Newsletter
-              </Link>
-              {/* Add more navigation items as needed */}
+              <div className="hidden md:flex md:ml-10 space-x-8">
+                <Link href="/dashboard" className="text-foreground hover:text-primary transition-colors">
+                  Dashboard
+                </Link>
+                <Link href="/contacts" className="text-foreground hover:text-primary transition-colors">
+                  Contacts
+                </Link>
+                <Link href="/campaigns" className="text-foreground hover:text-primary transition-colors">
+                  Campaigns
+                </Link>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" onClick={showToast}>
+                Show Toast
+              </Button>
+              <ModeToggle />
+              <UserButton afterSignOutUrl="/" />
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <UserButton afterSignOutUrl="/" />
-          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <Toaster />
+    </>
   )
 }

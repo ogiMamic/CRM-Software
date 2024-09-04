@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/nextjs'
+import { ThemeProvider } from "@/components/theme-provider"
 import { Navigation } from '@/components/Navigation'
 import './globals.css'
 
@@ -14,12 +15,21 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body>
-          <Navigation />
-          <main className="min-h-screen bg-gray-100 p-4">
-            {children}
-          </main>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="min-h-screen bg-background font-sans antialiased">
+              <Navigation />
+              <main className="container mx-auto py-6 px-4">
+                {children}
+              </main>
+            </div>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

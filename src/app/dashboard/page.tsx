@@ -1,26 +1,33 @@
-import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Overview } from "@/components/Overview"
+import { RecentSales } from "@/components/RecentSales"
 
-export default function Dashboard() {
+export default function DashboardPage() {
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      <nav className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Link href="/newsletter" className="block p-4 bg-white shadow rounded-lg hover:bg-gray-50">
-          Newsletter Subscribers
-        </Link>
-        <Link href="/campaigns" className="block p-4 bg-white shadow rounded-lg hover:bg-gray-50">
-          Campaign Management
-        </Link>
-        <Link href="/orders" className="block p-4 bg-white shadow rounded-lg hover:bg-gray-50">
-          Order Management
-        </Link>
-        <Link href="/donors" className="block p-4 bg-white shadow rounded-lg hover:bg-gray-50">
-          Donor Management
-        </Link>
-        <Link href="/inventory" className="block p-4 bg-white shadow rounded-lg hover:bg-gray-50">
-          Inventory Management
-        </Link>
-      </nav>
+    <div className="space-y-4">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* ... other cards ... */}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <Overview />
+          </CardContent>
+        </Card>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Sales</CardTitle>
+            <CardDescription>You made 265 sales this month.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentSales />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
