@@ -1,10 +1,10 @@
-// src/pages/newsletter.tsx
+// src/pages/inventory.tsx
 import Head from 'next/head'
 import { useUser } from '@clerk/nextjs';
 import { UserButton } from "@clerk/nextjs";
-import NewsletterSubscribers from '../components/NewsletterSubscribers'
+import InventoryManagement from '../components/InventoryManagement'
 
-export default function NewsletterPage() {
+export default function InventoryPage() {
   const { isLoaded, isSignedIn, user } = useUser();
 
   if (!isLoaded || !isSignedIn) {
@@ -14,20 +14,20 @@ export default function NewsletterPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
-        <title>Newsletter Subscribers - CRM Software</title>
+        <title>Inventory Management - CRM Software</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Newsletter Subscribers</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <UserButton />
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <NewsletterSubscribers />
+          <InventoryManagement />
         </div>
       </main>
     </div>
