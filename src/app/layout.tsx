@@ -1,6 +1,7 @@
 import { ClerkProvider } from '@clerk/nextjs'
+import { Sidebar } from '@/components/Sidebar'
+import { UserButton } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Navigation } from '@/components/Navigation'
 import './globals.css'
 
 export const metadata = {
@@ -15,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en">
         <body>
           <ThemeProvider
             attribute="class"
@@ -23,9 +24,14 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="min-h-screen bg-background font-sans antialiased">
-              <Navigation />
-              <main className="container mx-auto py-6 px-4">
+            <div className="h-full relative">
+              <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-80 bg-background">
+                <Sidebar />
+              </div>
+              <main className="md:pl-72 pb-10">
+                <div className="flex items-center p-4">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
                 {children}
               </main>
             </div>
