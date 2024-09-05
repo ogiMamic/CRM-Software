@@ -20,7 +20,17 @@ export const columns: ColumnDef<Campaign>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string
-      return <Badge variant={status === 'Active' ? "success" : status === 'Inactive' ? "destructive" : "secondary"}>{status}</Badge>
+      return (
+        <Badge 
+          className={
+            status === 'Active' ? 'bg-green-100 text-green-800' :
+            status === 'Inactive' ? 'bg-red-100 text-red-800' :
+            'bg-gray-100 text-gray-800'
+          }
+        >
+          {status}
+        </Badge>
+      )
     },
   },
   {

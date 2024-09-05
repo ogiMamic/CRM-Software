@@ -45,6 +45,7 @@ export function CreateCampaignForm({ onSubmit }: CreateCampaignFormProps) {
           value={formData.name}
           onChange={handleChange}
           required
+          className="w-full"
         />
       </div>
       <div className="space-y-2">
@@ -52,7 +53,7 @@ export function CreateCampaignForm({ onSubmit }: CreateCampaignFormProps) {
         <Select
           onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' | 'Draft' }))}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
@@ -71,6 +72,7 @@ export function CreateCampaignForm({ onSubmit }: CreateCampaignFormProps) {
           value={formData.startDate}
           onChange={handleChange}
           required
+          className="w-full"
         />
       </div>
       <div className="space-y-2">
@@ -82,6 +84,7 @@ export function CreateCampaignForm({ onSubmit }: CreateCampaignFormProps) {
           value={formData.endDate}
           onChange={handleChange}
           required
+          className="w-full"
         />
       </div>
       <div className="space-y-2">
@@ -93,6 +96,7 @@ export function CreateCampaignForm({ onSubmit }: CreateCampaignFormProps) {
           value={formData.budget}
           onChange={handleChange}
           required
+          className="w-full"
         />
       </div>
       <Button type="submit" className="w-full">Create Campaign</Button>

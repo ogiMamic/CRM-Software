@@ -6,10 +6,9 @@ import { columns } from './columns'
 import { Button } from '@/components/ui/button'
 import { PlusIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from 'next/link'
-import { Breadcrumbs } from '@/components/Breadcrumbs'
-import { CreateCampaignForm } from '@/components/CreateCampaignForm'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { CreateCampaignForm } from '@/components/CreateCampaignForm'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 
 type Campaign = {
   id: string
@@ -65,7 +64,7 @@ export default function CampaignsPage() {
         </Dialog>
       </div>
       <Tabs defaultValue="active" className="w-full">
-        <TabsList>
+        <TabsList className="mb-4">
           <TabsTrigger value="active">Active Campaigns</TabsTrigger>
           <TabsTrigger value="history">Campaign History</TabsTrigger>
         </TabsList>

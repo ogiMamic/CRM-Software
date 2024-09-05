@@ -1,22 +1,22 @@
-import Link from 'next/link';
-import { ChevronRight, Home } from 'lucide-react';
+import Link from 'next/link'
+import { ChevronRight, Home } from 'lucide-react'
 
 type BreadcrumbItem = {
-  label: string;
-  href: string;
-};
+  label: string
+  href: string
+}
 
 type BreadcrumbsProps = {
-  items: BreadcrumbItem[];
-};
+  items: BreadcrumbItem[]
+}
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
     <nav className="flex mb-4" aria-label="Breadcrumb">
       <ol className="inline-flex items-center space-x-1 md:space-x-3">
         <li className="inline-flex items-center">
-          <Link href="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-            <Home className="w-4 h-4 mr-2.5" />
+          <Link href="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+            <Home className="w-4 h-4 mr-2" />
             Home
           </Link>
         </li>
@@ -24,7 +24,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           <li key={index}>
             <div className="flex items-center">
               <ChevronRight className="w-5 h-5 text-gray-400" />
-              <Link href={item.href} className="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">
+              <Link href={item.href} className="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">
                 {item.label}
               </Link>
             </div>
@@ -32,5 +32,5 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         ))}
       </ol>
     </nav>
-  );
+  )
 }
