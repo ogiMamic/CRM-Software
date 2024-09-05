@@ -41,9 +41,9 @@ const routes = [
     href: "/orders",
   },
   {
-    label: "Donations",
+    label: "Donors",
     icon: Gift,
-    href: "/donations",
+    href: "/donors",
   },
   {
     label: "Inventory",
