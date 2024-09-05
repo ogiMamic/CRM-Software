@@ -5,6 +5,9 @@ import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
+import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { toast, Toaster } from 'sonner';
 
 type Contact = {
   id: string;
@@ -44,7 +47,6 @@ export default function ContactsPage() {
         const mockContacts: Contact[] = [
           { id: '1', name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', company: 'ABC Corp' },
           { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321', company: 'XYZ Inc' },
-          // Add more mock contacts as needed
         ];
         setContacts(mockContacts);
       }, 1000);
@@ -53,13 +55,26 @@ export default function ContactsPage() {
     fetchContacts();
   }, []);
 
+  useEffect(() => {
+    const newContact = JSON.parse(localStorage.getItem('newContact') || 'null');
+    if (newContact) {
+      setContacts(prevContacts => [...prevContacts, { ...newContact, id: String(prevContacts.length + 1) }]);
+      toast.success('New contact has been added successfully.');
+      localStorage.removeItem('newContact');
+    }
+  }, []);
+
   return (
     <div className="container mx-auto py-10">
+      <Toaster position="top-right" />
+      <Breadcrumbs items={[{ label: 'Contacts', href: '/contacts' }]} />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Contacts</h1>
-        <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> Add Contact
-        </Button>
+        <Link href="/contacts/add">
+          <Button>
+            <PlusIcon className="mr-2 h-4 w-4" /> Add Contact
+          </Button>
+        </Link>
       </div>
       <DataTable columns={columns} data={contacts} />
     </div>

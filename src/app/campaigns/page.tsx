@@ -5,6 +5,11 @@ import { DataTable } from '@/components/ui/data-table'
 import { columns } from './columns'
 import { Button } from '@/components/ui/button'
 import { PlusIcon } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from 'next/link'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { CreateCampaignForm } from '@/components/CreateCampaignForm'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type Campaign = {
   id: string
@@ -35,15 +40,42 @@ export default function CampaignsPage() {
     fetchCampaigns()
   }, [])
 
+  const activeCampaigns = campaigns.filter(campaign => campaign.status === 'Active')
+  const inactiveCampaigns = campaigns.filter(campaign => campaign.status === 'Inactive')
+
   return (
     <div className="container mx-auto py-10">
+      <Breadcrumbs items={[{ label: 'Campaigns', href: '/campaigns' }]} />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Campaigns</h1>
-        <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> Create Campaign
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusIcon className="mr-2 h-4 w-4" /> Create Campaign
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Campaign</DialogTitle>
+            </DialogHeader>
+            <CreateCampaignForm onSubmit={(newCampaign) => {
+              setCampaigns([...campaigns, { ...newCampaign, id: String(campaigns.length + 1) }])
+            }} />
+          </DialogContent>
+        </Dialog>
       </div>
-      <DataTable columns={columns} data={campaigns} />
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList>
+          <TabsTrigger value="active">Active Campaigns</TabsTrigger>
+          <TabsTrigger value="history">Campaign History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="active">
+          <DataTable columns={columns} data={activeCampaigns} />
+        </TabsContent>
+        <TabsContent value="history">
+          <DataTable columns={columns} data={inactiveCampaigns} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

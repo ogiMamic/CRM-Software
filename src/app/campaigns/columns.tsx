@@ -1,8 +1,7 @@
-"use client"
-
 import { ColumnDef } from "@tanstack/react-table"
+import { Badge } from "@/components/ui/badge"
 
-export type Campaign = {
+type Campaign = {
   id: string
   name: string
   status: 'Active' | 'Inactive' | 'Draft'
@@ -19,6 +18,10 @@ export const columns: ColumnDef<Campaign>[] = [
   {
     accessorKey: "status",
     header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string
+      return <Badge variant={status === 'Active' ? "success" : status === 'Inactive' ? "destructive" : "secondary"}>{status}</Badge>
+    },
   },
   {
     accessorKey: "startDate",
@@ -32,11 +35,11 @@ export const columns: ColumnDef<Campaign>[] = [
     accessorKey: "budget",
     header: "Budget",
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("budget"))
+      const budget = parseFloat(row.getValue("budget"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
-      }).format(amount)
+      }).format(budget)
       return <div className="font-medium">{formatted}</div>
     },
   },
