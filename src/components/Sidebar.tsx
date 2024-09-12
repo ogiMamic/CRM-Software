@@ -78,7 +78,7 @@ export function Sidebar() {
             <Image fill alt="Logo" src="/logo.png" className="rounded-xl" />
           </div>
           <h1 className={cn("text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400", montserrat.className)}>
-            CRM Software
+            Pater Pio CRM Software
           </h1>
         </Link>
         <nav className="space-y-1">

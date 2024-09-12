@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { format, addMonths, subMonths } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 type Task = {
   id: string
@@ -20,7 +21,6 @@ type Task = {
 export function TaskCalendar() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [newTask, setNewTask] = useState<Omit<Task, 'id'>>({
     title: '',
@@ -29,14 +29,35 @@ export function TaskCalendar() {
     dueDate: new Date(),
   })
 
+  useEffect(() => {
+    // Load tasks from localStorage on component mount
+    const savedTasks = localStorage.getItem('tasks')
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks).map((task: Task) => ({
+        ...task,
+        dueDate: new Date(task.dueDate)
+      })))
+    }
+  }, [])
+
+  useEffect(() => {
+    // Save tasks to localStorage whenever tasks change
+    localStorage.setItem('tasks', JSON.stringify(tasks))
+  }, [tasks])
+
   const tasksForSelectedDate = tasks.filter(task => 
     task.dueDate.toDateString() === selectedDate.toDateString()
   )
 
   const handleAddTask = () => {
+    if (!newTask.title || !newTask.assignee) {
+      toast.error("Please fill in all fields")
+      return
+    }
     const task: Task = {
       id: Date.now().toString(),
       ...newTask,
+      dueDate: selectedDate
     }
     setTasks([...tasks, task])
     setIsAddTaskOpen(false)
@@ -46,10 +67,19 @@ export function TaskCalendar() {
       assignee: '',
       dueDate: new Date(),
     })
+    toast.success("Task added successfully")
   }
 
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(task => task.id !== taskId))
+    toast.success("Task deleted successfully")
+  }
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -101,16 +131,6 @@ export function TaskCalendar() {
                   className="col-span-3"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dueDate" className="text-right">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={format(newTask.dueDate, 'yyyy-MM-dd')}
-                  onChange={(e) => setNewTask({...newTask, dueDate: new Date(e.target.value)})}
-                  className="col-span-3"
-                />
-              </div>
             </div>
             <Button onClick={handleAddTask}>Add Task</Button>
           </DialogContent>
@@ -119,45 +139,38 @@ export function TaskCalendar() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span>{format(currentMonth, 'MMMM yyyy')}</span>
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </CardTitle>
+            <CardTitle>Calendar</CardTitle>
           </CardHeader>
           <CardContent>
             <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              month={currentMonth}
-              className="rounded-md border"
+              date={selectedDate}
+              onDateChange={handleDateSelect}
             />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Tasks for {format(selectedDate, 'MMMM d, yyyy')}</CardTitle>
+            <CardTitle>Tasks for {selectedDate.toDateString()}</CardTitle>
           </CardHeader>
           <CardContent>
             {tasksForSelectedDate.length > 0 ? (
               <ul className="space-y-2">
                 {tasksForSelectedDate.map(task => (
                   <li key={task.id} className="flex justify-between items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
-                    <span>{task.title}</span>
+                    <div>
+                      <span className="font-medium">{task.title}</span>
+                      <span className="text-sm text-gray-500 ml-2">({task.assignee})</span>
+                    </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">{task.assignee}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                        task.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <Badge variant={
+                        task.status === 'Completed' ? 'success' :
+                        task.status === 'In Progress' ? 'warning' : 'default'
+                      }>
                         {task.status}
-                      </span>
+                      </Badge>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </li>
                 ))}
