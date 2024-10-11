@@ -1,15 +1,30 @@
-// app/api/contacts/route.ts
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const { data: contacts, error } = await supabase.from('contacts').select('*');
+const prisma = new PrismaClient();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+export async function GET() {
+  try {
+    const contacts = await prisma.contact.findMany();
+    return NextResponse.json(contacts);
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
   }
+}
 
-  return NextResponse.json(contacts);
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const contact = await prisma.contact.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        company: body.company,
+      },
+    });
+    return NextResponse.json(contact, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });
+  }
 }
