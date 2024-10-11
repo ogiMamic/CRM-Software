@@ -1,14 +1,10 @@
-import { ColumnDef } from "@tanstack/react-table"
-import { Badge } from "@/components/ui/badge"
+"use client"
 
-type Campaign = {
-  id: string
-  name: string
-  status: 'Active' | 'Inactive' | 'Draft'
-  startDate: string
-  endDate: string
-  budget: number
-}
+import { ColumnDef } from "@tanstack/react-table"
+import { Campaign } from "./types"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { MoreHorizontal } from "lucide-react"
 
 export const columns: ColumnDef<Campaign>[] = [
   {
@@ -20,37 +16,44 @@ export const columns: ColumnDef<Campaign>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string
-      return (
-        <Badge 
-          className={
-            status === 'Active' ? 'bg-green-100 text-green-800' :
-            status === 'Inactive' ? 'bg-red-100 text-red-800' :
-            'bg-gray-100 text-gray-800'
-          }
-        >
-          {status}
-        </Badge>
-      )
+      return <Badge variant={status === 'Active' ? "success" : status === 'Draft' ? "warning" : "secondary"}>{status}</Badge>
     },
   },
   {
+    accessorKey: "owner",
+    header: "Campaign Owner",
+  },
+  {
+    accessorKey: "comments",
+    header: "Comments",
+  },
+  {
+    accessorKey: "createdOn",
+    header: "Created On",
+  },
+  {
+    accessorKey: "notes",
+    header: "Campaign Notes",
+  },
+  {
     accessorKey: "startDate",
-    header: "Start Date",
+    header: "Campaign Start Date",
   },
   {
     accessorKey: "endDate",
-    header: "End Date",
+    header: "Campaign End Date",
   },
   {
-    accessorKey: "budget",
-    header: "Budget",
+    id: "actions",
     cell: ({ row }) => {
-      const budget = parseFloat(row.getValue("budget"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(budget)
-      return <div className="font-medium">{formatted}</div>
+      const campaign = row.original
+ 
+      return (
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      )
     },
   },
 ]
