@@ -62,7 +62,7 @@ export function Calendar({ date, onDateChange }: CalendarProps) {
             variant="ghost"
             className={cn(
               "h-8 w-8 p-0 font-normal",
-              date.getDate() === day &&
+              date && date.getDate() === day &&
                 date.getMonth() === currentMonth.getMonth() &&
                 date.getFullYear() === currentMonth.getFullYear()
                 ? "bg-primary text-primary-foreground"

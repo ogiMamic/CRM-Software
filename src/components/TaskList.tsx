@@ -1,4 +1,9 @@
-import { useState, useEffect } from 'react'
+"use client"
+
+import React, { useState, useEffect } from 'react'
+import { format } from "date-fns"
+import { CalendarIcon, PlusIcon, Pencil, Trash2 } from 'lucide-react'
+import { cn } from "@/lib/utils"
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
@@ -6,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, Pencil, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from '@/components/ui/calendar'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -16,7 +22,34 @@ type Task = {
   title: string
   status: 'To Do' | 'In Progress' | 'Completed'
   assignee: string
-  dueDate: string
+  dueDate: Date | undefined
+}
+
+function DatePickerDemo({ date, setDate }: { date: Date | undefined, setDate: (date: Date | undefined) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "w-[280px] justify-start text-left font-normal",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "PPP") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 export function TaskList() {
@@ -24,27 +57,27 @@ export function TaskList() {
   const [filters, setFilters] = useState({
     status: 'all',
     assignee: '',
-    dueDate: '',
+    dueDate: undefined as Date | undefined,
   })
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask] = useState<Omit<Task, 'id'>>({
     title: '',
-    status: 'To Do' as const,
+    status: 'To Do',
     assignee: '',
-    dueDate: '',
+    dueDate: undefined,
   })
 
   useEffect(() => {
     // Simulating API call
     setTimeout(() => {
       const mockTasks: Task[] = [
-        { id: "1", title: "Create marketing plan", status: "In Progress", assignee: "John Doe", dueDate: "2023-12-15" },
-        { id: "2", title: "Update website content", status: "To Do", assignee: "Jane Smith", dueDate: "2023-12-20" },
-        { id: "3", title: "Prepare quarterly report", status: "Completed", assignee: "Mike Johnson", dueDate: "2023-12-10" },
-        { id: "4", title: "Client meeting", status: "To Do", assignee: "John Doe", dueDate: "2023-12-18" },
-        { id: "5", title: "Team brainstorming session", status: "In Progress", assignee: "Jane Smith", dueDate: "2023-12-22" },
+        { id: "1", title: "Create marketing plan", status: "In Progress", assignee: "John Doe", dueDate: new Date("2023-12-15") },
+        { id: "2", title: "Update website content", status: "To Do", assignee: "Jane Smith", dueDate: new Date("2023-12-20") },
+        { id: "3", title: "Prepare quarterly report", status: "Completed", assignee: "Mike Johnson", dueDate: new Date("2023-12-10") },
+        { id: "4", title: "Client meeting", status: "To Do", assignee: "John Doe", dueDate: new Date("2023-12-18") },
+        { id: "5", title: "Team brainstorming session", status: "In Progress", assignee: "Jane Smith", dueDate: new Date("2023-12-22") },
       ]
       setTasks(mockTasks)
     }, 1000)
@@ -65,7 +98,14 @@ export function TaskList() {
       },
     },
     { accessorKey: "assignee", header: "Assignee" },
-    { accessorKey: "dueDate", header: "Due Date" },
+    { 
+      accessorKey: "dueDate", 
+      header: "Due Date",
+      cell: ({ row }) => {
+        const date = row.getValue("dueDate") as Date | undefined
+        return date ? format(date, "PPP") : "Not set"
+      },
+    },
     {
       id: "actions",
       cell: ({ row }) => {
@@ -74,9 +114,11 @@ export function TaskList() {
           <div className="flex space-x-2">
             <Button variant="outline" size="icon" onClick={() => handleEditTask(task)}>
               <Pencil className="h-4 w-4" />
+              <span className="sr-only">Edit task</span>
             </Button>
             <Button variant="outline" size="icon" onClick={() => handleDeleteTask(task.id)}>
               <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete task</span>
             </Button>
           </div>
         )
@@ -88,7 +130,7 @@ export function TaskList() {
     return (
       (filters.status === 'all' || task.status === filters.status) &&
       (filters.assignee === '' || task.assignee.toLowerCase().includes(filters.assignee.toLowerCase())) &&
-      (filters.dueDate === '' || task.dueDate === filters.dueDate)
+      (!filters.dueDate || (task.dueDate && task.dueDate.toDateString() === filters.dueDate.toDateString()))
     )
   })
 
@@ -131,7 +173,7 @@ export function TaskList() {
       title: '',
       status: 'To Do',
       assignee: '',
-      dueDate: '',
+      dueDate: undefined,
     })
     setCurrentTask(null)
   }
@@ -186,11 +228,9 @@ export function TaskList() {
             </div>
             <div>
               <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={filters.dueDate}
-                onChange={(e) => setFilters({...filters, dueDate: e.target.value})}
+              <DatePickerDemo
+                date={filters.dueDate}
+                setDate={(date) => setFilters({...filters, dueDate: date})}
               />
             </div>
           </div>
@@ -259,16 +299,15 @@ function TaskForm({ task, setTask, onSubmit }: TaskFormProps) {
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="dueDate" className="text-right">
+        <Label htmlFor="taskDueDate" className="text-right">
           Due Date
         </Label>
-        <Input
-          id="dueDate"
-          type="date"
-          value={task.dueDate}
-          onChange={(e) => setTask({...task, dueDate: e.target.value})}
-          className="col-span-3"
-        />
+        <div className="col-span-3">
+          <DatePickerDemo
+            date={task.dueDate}
+            setDate={(date) => setTask({...task, dueDate: date})}
+          />
+        </div>
       </div>
       <Button onClick={onSubmit} className="ml-auto">Submit</Button>
     </div>
