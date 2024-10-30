@@ -151,17 +151,21 @@ export default function ContactsPage() {
                   <div className="space-y-2">
                     <h3 className="font-medium">Show columns:</h3>
                     {columns.map((column) => {
+                      const columnId = `column-${column.accessorKey}`;
                       return (
                         <div key={column.id} className="flex items-center space-x-2">
                           <Checkbox
+                            id={columnId}
                             checked={table.getColumn(column.accessorKey as string)?.getIsVisible()}
                             onCheckedChange={(value) =>
                               table.getColumn(column.accessorKey as string)?.toggleVisibility(!!value)
                             }
                           />
-                          <Label htmlFor={column.id} className="capitalize">{column.header as string}</Label>
+                          <Label htmlFor={columnId} className="capitalize">
+                            {column.header as string}
+                          </Label>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </PopoverContent>
