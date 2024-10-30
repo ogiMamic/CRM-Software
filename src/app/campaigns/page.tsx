@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { DataTable } from '@/components/ui/data-table'
 import { columns } from './columns'
 import { Button } from '@/components/ui/button'
-import { PlusIcon, FilterIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { PlusIcon, FilterIcon, ChevronLeftIcon, ChevronRightIcon, SearchIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CreateCampaignForm } from '@/components/CreateCampaignForm'
@@ -45,6 +45,7 @@ export default function CampaignsPage() {
     startingThisQuarter: false,
     recentlyCreated: false,
   })
+  const [searchTerm, setSearchTerm] = useState('')
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false)
   const [assignees, setAssignees] = useState<string[]>([])
   const [properties, setProperties] = useState<string[]>([])
@@ -84,7 +85,13 @@ export default function CampaignsPage() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const isRecentlyCreated = new Date(campaign.createdOn) >= thirtyDaysAgo
 
+    const matchesSearch = searchTerm === '' || 
+      campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      campaign.assignee.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      campaign.property.toLowerCase().includes(searchTerm.toLowerCase())
+
     return (
+      matchesSearch &&
       (filters.status === 'all' || campaign.status === filters.status) &&
       (filters.platform === 'all' || campaign.platform === filters.platform) &&
       (filters.assignee === 'all' || campaign.assignee === filters.assignee) &&
@@ -235,6 +242,18 @@ export default function CampaignsPage() {
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
         </TabsList>
         <TabsContent value="manage">
+          <div className="mb-4">
+            <div className="relative">
+              <SearchIcon className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                type="search"
+                placeholder="Search campaigns..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
           <DataTable columns={columns} data={paginatedCampaigns} />
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="flex-1 text-sm text-muted-foreground">
@@ -270,6 +289,7 @@ export default function CampaignsPage() {
           {/* Implement tasks view here */}
           <p>Tasks view coming soon...</p>
         </TabsContent>
+      
       </Tabs>
     </div>
   )
