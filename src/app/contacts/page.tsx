@@ -153,7 +153,7 @@ export default function ContactsPage() {
                     {columns.map((column) => {
                       const columnId = `column-${column.accessorKey}`;
                       return (
-                        <div key={column.id} className="flex items-center space-x-2">
+                        <div key={column.accessorKey} className="flex items-center space-x-2">
                           <Checkbox
                             id={columnId}
                             checked={table.getColumn(column.accessorKey as string)?.getIsVisible()}
