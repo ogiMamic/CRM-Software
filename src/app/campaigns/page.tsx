@@ -12,28 +12,8 @@ import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-
-type Campaign = {
-  id: string
-  name: string
-  status: 'Active' | 'Inactive' | 'Draft'
-  startDate: string
-  endDate: string
-  budget: number
-  platform: 'Google Ads' | 'Meta Ads'
-  roi: number
-  costs: number
-  channel: string
-  assignee: string
-  property: string
-  workflow: string
-  owner: string
-  comments: number
-  createdOn: string
-  notes: string
-}
+import { Campaign } from '@prisma/client'
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -52,38 +32,41 @@ export default function CampaignsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [activeTab, setActiveTab] = useState('manage')
-
+  
   useEffect(() => {
-    // In a real application, you would fetch this data from an API
     const fetchCampaigns = async () => {
-      // Simulating an API call with setTimeout
-      setTimeout(() => {
-        const mockCampaigns: Campaign[] = [
-          { id: '1', name: 'Summer Sale', status: 'Active', startDate: '2023-06-01', endDate: '2023-08-31', budget: 5000, platform: 'Google Ads', roi: 2.5, costs: 4000, channel: 'Search', assignee: 'John Doe', property: 'E-commerce Store', workflow: 'Planning > Design > Launch > Monitor', owner: 'Vladimir Radosevic', comments: 0, createdOn: '2023-05-15', notes: '' },
-          { id: '2', name: 'Black Friday', status: 'Draft', startDate: '2023-11-24', endDate: '2023-11-27', budget: 10000, platform: 'Meta Ads', roi: 0, costs: 0, channel: 'Social', assignee: 'Jane Smith', property: 'Retail Store', workflow: 'Ideation > Approval > Setup', owner: 'Roland Biczysko', comments: 2, createdOn: '2023-10-01', notes: 'Needs budget approval' },
-          { id: '3', name: 'Holiday Special', status: 'Inactive', startDate: '2022-12-01', endDate: '2022-12-31', budget: 7500, platform: 'Google Ads', roi: 3.2, costs: 7000, channel: 'Display', assignee: 'Mike Johnson', property: 'Online Marketplace', workflow: 'Completed', owner: 'Felipe Del Campo', comments: 5, createdOn: '2022-11-15', notes: 'Very successful campaign' },
-        ]
-        setCampaigns(mockCampaigns)
+      const response = await fetch('/api/campaigns')
+      const data = await response.json()
+      setCampaigns(data)
 
-        // Extract unique assignees and properties
-        const uniqueAssignees = Array.from(new Set(mockCampaigns.map(c => c.assignee)))
-        const uniqueProperties = Array.from(new Set(mockCampaigns.map(c => c.property)))
-        setAssignees(uniqueAssignees)
-        setProperties(uniqueProperties)
-      }, 1000)
+      // Extract unique assignees and properties
+      const uniqueAssignees = Array.from(new Set(data.map((c: Campaign) => c.assignee))) as string[];
+      const uniqueProperties = Array.from(new Set(data.map((c: Campaign) => c.property))) as string[];
+      setAssignees(uniqueAssignees);
+      setProperties(uniqueProperties);
     }
 
     fetchCampaigns()
   }, [])
 
+  const handleAddCampaign = async (newCampaign: Omit<Campaign, 'id' | 'createdAt'>) => {
+    const response = await fetch('/api/campaigns/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newCampaign),
+    })
+    const addedCampaign = await response.json()
+    setCampaigns([...campaigns, addedCampaign])
+  }
+
   const filteredCampaigns = campaigns.filter(campaign => {
     const quarterStart = new Date()
     quarterStart.setMonth(Math.floor(quarterStart.getMonth() / 3) * 3, 1)
-    const isStartingThisQuarter = new Date(campaign.startDate) >= quarterStart && new Date(campaign.startDate) < new Date(quarterStart.getFullYear(), quarterStart.getMonth() + 3, 0)
+    const isStartingThisQuarter = campaign.startDate >= quarterStart && campaign.startDate < new Date(quarterStart.getFullYear(), quarterStart.getMonth() + 3, 0)
     
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const isRecentlyCreated = new Date(campaign.createdOn) >= thirtyDaysAgo
+    const isRecentlyCreated = campaign.createdAt >= thirtyDaysAgo
 
     const matchesSearch = searchTerm === '' || 
       campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -103,7 +86,7 @@ export default function CampaignsPage() {
 
   const pageCount = Math.ceil(filteredCampaigns.length / itemsPerPage)
   const paginatedCampaigns = filteredCampaigns.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-
+  
   return (
     <div className="container mx-auto py-10">
       <Breadcrumbs items={[{ label: 'Campaigns', href: '/campaigns' }]} />
@@ -228,9 +211,7 @@ export default function CampaignsPage() {
               <DialogHeader>
                 <DialogTitle>Create New Campaign</DialogTitle>
               </DialogHeader>
-              <CreateCampaignForm onSubmit={(newCampaign) => {
-                setCampaigns([...campaigns, { ...newCampaign, id: String(campaigns.length + 1) }])
-              }} />
+              <CreateCampaignForm onSubmit={handleAddCampaign} />
             </DialogContent>
           </Dialog>
         </div>
@@ -289,7 +270,6 @@ export default function CampaignsPage() {
           {/* Implement tasks view here */}
           <p>Tasks view coming soon...</p>
         </TabsContent>
-      
       </Tabs>
     </div>
   )
