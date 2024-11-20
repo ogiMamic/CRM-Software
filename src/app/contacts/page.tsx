@@ -40,8 +40,10 @@ type Contact = {
   id: string
   name: string
   email: string
-  phone: string
-  company: string
+  phone: string | null
+  company: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 const columns: ColumnDef<Contact>[] = [
@@ -61,6 +63,14 @@ const columns: ColumnDef<Contact>[] = [
     accessorKey: "company",
     header: "Company",
   },
+  {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => {
+      const date = new Date(row.original.createdAt);
+      return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('sr-RS');
+    },
+  },
 ]
 
 export default function ContactsPage() {
@@ -73,15 +83,17 @@ export default function ContactsPage() {
 
   useEffect(() => {
     const fetchContacts = async () => {
-      setTimeout(() => {
-        const mockContacts: Contact[] = [
-          { id: '1', name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', company: 'ABC Corp' },
-          { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321', company: 'XYZ Inc' },
-          { id: '3', name: 'Alice Johnson', email: 'alice@example.com', phone: '111-222-3333', company: 'Tech Co' },
-          { id: '4', name: 'Bob Williams', email: 'bob@example.com', phone: '444-555-6666', company: 'Dev Inc' },
-        ]
-        setContacts(mockContacts)
-      }, 1000)
+      try {
+        const response = await fetch('/api/contacts')
+        if (!response.ok) {
+          throw new Error('Failed to fetch contacts')
+        }
+        const data = await response.json()
+        setContacts(data)
+      } catch (error) {
+        console.error('Error fetching contacts:', error)
+        toast.error('Failed to load contacts. Please try again.')
+      }
     }
 
     fetchContacts()

@@ -1,7 +1,5 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -12,15 +10,14 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const data = await request.json();
     const contact = await prisma.contact.create({
       data: {
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        company: body.company,
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
     return NextResponse.json(contact, { status: 201 });

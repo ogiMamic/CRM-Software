@@ -17,21 +17,38 @@ export default function AddContactPage() {
     phone: '',
     company: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your API
-    console.log('Form submitted:', formData);
-    // Store the new contact in localStorage (in a real app, you'd send this to an API)
-    localStorage.setItem('newContact', JSON.stringify(formData));
-    // Show success toast
-    toast.success('Contact added successfully!');
-    // Redirect to the contacts page
-    router.push('/contacts');
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create contact');
+      }
+
+      const newContact = await response.json();
+      toast.success('Contact added successfully!');
+      router.push('/contacts');
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      toast.error('Failed to add contact. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,6 +72,7 @@ export default function AddContactPage() {
                 placeholder="Name"
                 value={formData.name}
                 onChange={handleChange}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -66,6 +84,7 @@ export default function AddContactPage() {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -88,8 +107,8 @@ export default function AddContactPage() {
                 onChange={handleChange}
               />
             </div>
-            <Button type="submit" className="w-full">
-              Add Contact
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Adding Contact...' : 'Add Contact'}
             </Button>
           </form>
         </CardContent>
