@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { PlusIcon, FilterIcon } from 'lucide-react'
+import { PlusIcon, FilterIcon, MoreHorizontal, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { toast, Toaster } from 'sonner'
@@ -35,6 +35,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type Contact = {
   id: string
@@ -46,33 +54,6 @@ type Contact = {
   updatedAt: string
 }
 
-const columns: ColumnDef<Contact>[] = [
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "phone",
-    header: "Phone",
-  },
-  {
-    accessorKey: "company",
-    header: "Company",
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Created At",
-    cell: ({ row }) => {
-      const date = new Date(row.original.createdAt);
-      return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('sr-RS');
-    },
-  },
-]
-
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [sorting, setSorting] = useState<SortingState>([])
@@ -80,33 +61,206 @@ export default function ContactsPage() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState('')
+  const [editingContact, setEditingContact] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Partial<Contact>>({})
+  const inputRefs = useRef<{ [key: string]: React.RefObject<HTMLInputElement> }>({
+    name: React.createRef(),
+    email: React.createRef(),
+    phone: React.createRef(),
+    company: React.createRef(),
+  });
 
   useEffect(() => {
-    const fetchContacts = async () => {
-      try {
-        const response = await fetch('/api/contacts')
-        if (!response.ok) {
-          throw new Error('Failed to fetch contacts')
-        }
-        const data = await response.json()
-        setContacts(data)
-      } catch (error) {
-        console.error('Error fetching contacts:', error)
-        toast.error('Failed to load contacts. Please try again.')
-      }
-    }
-
     fetchContacts()
   }, [])
 
-  useEffect(() => {
-    const newContact = JSON.parse(localStorage.getItem('newContact') || 'null')
-    if (newContact) {
-      setContacts(prev => [...prev, { ...newContact, id: String(prev.length + 1) }])
-      toast.success('New contact has been added successfully.')
-      localStorage.removeItem('newContact')
+  const fetchContacts = async () => {
+    try {
+      const response = await fetch('/api/contacts')
+      if (!response.ok) {
+        throw new Error('Failed to fetch contacts')
+      }
+      const data = await response.json()
+      setContacts(data)
+    } catch (error) {
+      console.error('Error fetching contacts:', error)
+      toast.error('Failed to load contacts. Please try again.')
     }
-  }, [])
+  }
+
+  const handleEditClick = (contact: Contact) => {
+    setEditingContact(contact.id);
+    setTimeout(() => {
+      inputRefs.current['name']?.current?.focus();
+    }, 0);
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingContact) return;
+
+    const updatedContact = {
+      name: inputRefs.current['name']?.current?.value || '',
+      email: inputRefs.current['email']?.current?.value || '',
+      phone: inputRefs.current['phone']?.current?.value || '',
+      company: inputRefs.current['company']?.current?.value || '',
+    };
+
+    try {
+      const response = await fetch(`/api/contacts/${editingContact}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedContact),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update contact');
+      }
+      await fetchContacts();
+      setEditingContact(null);
+      toast.success('Contact updated successfully');
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast.error('Failed to update contact. Please try again.');
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingContact(null)
+    setEditForm({})
+  }
+
+  const handleDeleteContact = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this contact?')) {
+      try {
+        const response = await fetch(`/api/contacts/${id}`, {
+          method: 'DELETE',
+        })
+        if (!response.ok) {
+          throw new Error('Failed to delete contact')
+        }
+        fetchContacts()
+        toast.success('Contact deleted successfully')
+      } catch (error) {
+        console.error('Error deleting contact:', error)
+        toast.error('Failed to delete contact. Please try again.')
+      }
+    }
+  }
+
+  const columns: ColumnDef<Contact>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => {
+        const contact = row.original
+        return editingContact === contact.id ? (
+          <Input
+            name="name"
+            defaultValue={contact.name}
+            ref={inputRefs.current['name']}
+          />
+        ) : (
+          contact.name
+        )
+      },
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => {
+        const contact = row.original
+        return editingContact === contact.id ? (
+          <Input
+            name="email"
+            defaultValue={contact.email || ''}
+            ref={inputRefs.current['email']}
+          />
+        ) : (
+          contact.email
+        )
+      },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => {
+        const contact = row.original
+        return editingContact === contact.id ? (
+          <Input
+            name="phone"
+            defaultValue={contact.phone || ''}
+            ref={inputRefs.current['phone']}
+          />
+        ) : (
+          contact.phone
+        )
+      },
+    },
+    {
+      accessorKey: "company",
+      header: "Company",
+      cell: ({ row }) => {
+        const contact = row.original
+        return editingContact === contact.id ? (
+          <Input
+            name="company"
+            defaultValue={contact.company || ''}
+            ref={inputRefs.current['company']}
+          />
+        ) : (
+          contact.company
+        )
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Created At",
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("createdAt"))
+        return <div>{date.toLocaleDateString('sr-RS')}</div>
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const contact = row.original
+        return (
+          <div className="text-right">
+            {editingContact === contact.id ? (
+              <div className="flex justify-end space-x-2">
+                <Button onClick={handleEditSubmit} size="sm">
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button onClick={handleEditCancel} size="sm" variant="outline">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleEditClick(contact)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleDeleteContact(contact.id)}>
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
 
   const table = useReactTable({
     data: contacts,
@@ -127,11 +281,6 @@ export default function ContactsPage() {
       globalFilter,
     },
   })
-
-  const visibleColumns = useMemo(() => 
-    columns.filter(column => columnVisibility[column.accessorKey as string] !== false),
-    [columnVisibility]
-  )
 
   return (
     <div className="container mx-auto py-10">
@@ -162,22 +311,20 @@ export default function ContactsPage() {
                 <PopoverContent className="w-[200px]">
                   <div className="space-y-2">
                     <h3 className="font-medium">Show columns:</h3>
-                    {columns.map((column) => {
-                      const columnId = `column-${column.accessorKey}`;
+                    {table.getAllColumns().filter(column => column.id !== 'actions').map((column) => {
                       return (
-                        <div key={column.accessorKey} className="flex items-center space-x-2">
+                        <div key={column.id} className="flex items-center space-x-2">
                           <Checkbox
-                            id={columnId}
-                            checked={table.getColumn(column.accessorKey as string)?.getIsVisible()}
-                            onCheckedChange={(value) =>
-                              table.getColumn(column.accessorKey as string)?.toggleVisibility(!!value)
-                            }
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                            aria-label={`Toggle ${column.id} column`}
+                            id={`column-${column.id}`}
                           />
-                          <Label htmlFor={columnId} className="capitalize">
-                            {column.header as string}
+                          <Label htmlFor={`column-${column.id}`} className="capitalize">
+                            {column.id}
                           </Label>
                         </div>
-                      );
+                      )
                     })}
                   </div>
                 </PopoverContent>
@@ -225,7 +372,7 @@ export default function ContactsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={visibleColumns.length} className="h-24 text-center">
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
                       No results.
                     </TableCell>
                   </TableRow>

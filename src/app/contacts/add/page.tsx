@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -9,22 +12,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { toast, Toaster } from 'sonner';
 
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().regex(/^\+?[0-9\s-()]+$/, "Invalid phone number").optional().or(z.literal('')),
+  company: z.string().optional(),
+});
+
+type ContactFormData = z.infer<typeof contactSchema>;
+
 export default function AddContactPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const { register, handleSubmit, formState: { errors } } = useForm<ContactFormData>({
+    resolver: zodResolver(contactSchema)
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
 
     try {
@@ -33,19 +38,24 @@ export default function AddContactPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create contact');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create contact. Please try again.');
       }
 
       const newContact = await response.json();
       toast.success('Contact added successfully!');
       router.push('/contacts');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating contact:', error);
-      toast.error('Failed to add contact. Please try again.');
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -63,49 +73,43 @@ export default function AddContactPage() {
           <CardTitle>Add New Contact</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                name="name"
+                {...register('name')}
                 placeholder="Name"
-                value={formData.name}
-                onChange={handleChange}
-                required
               />
+              {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
+                {...register('email')}
                 placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                required
               />
+              {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                name="phone"
+                {...register('phone')}
                 placeholder="Phone"
-                value={formData.phone}
-                onChange={handleChange}
               />
+              {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="company">Company</Label>
               <Input
                 id="company"
-                name="company"
+                {...register('company')}
                 placeholder="Company"
-                value={formData.company}
-                onChange={handleChange}
               />
+              {errors.company && <p className="text-red-500 text-sm">{errors.company.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Adding Contact...' : 'Add Contact'}

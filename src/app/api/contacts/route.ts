@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 export async function GET() {
@@ -22,6 +23,11 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(contact, { status: 201 });
   } catch (error) {
+    if(error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return NextResponse.json({ error: 'A contact with this email already exists.' }, { status: 400 });
+      }
+    }
     return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });
   }
 }

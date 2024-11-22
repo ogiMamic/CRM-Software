@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -17,19 +15,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const body = await request.json();
-    const updatedContact = await prisma.contact.update({
+    const data = await request.json();
+    const contact = await prisma.contact.update({
       where: { id: params.id },
-      data: {
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        company: body.company,
-      },
+      data,
     });
-    return NextResponse.json(updatedContact);
+    return NextResponse.json(contact, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 });
   }
@@ -40,7 +33,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     await prisma.contact.delete({
       where: { id: params.id },
     });
-    return NextResponse.json({ message: 'Contact deleted successfully' });
+    return NextResponse.json({ message: 'Contact deleted successfully' }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 });
   }
