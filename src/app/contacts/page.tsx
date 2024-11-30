@@ -1,6 +1,9 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -25,7 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { PlusIcon, FilterIcon, MoreHorizontal, Check, X, ArrowUpDown } from 'lucide-react'
+import { PlusIcon, FilterIcon, MoreHorizontal, ArrowUpDown } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { toast, Toaster } from 'sonner'
@@ -43,15 +46,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-type Contact = {
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().regex(/^\+?[0-9\s-()]+$/, "Invalid phone number").optional().or(z.literal('')),
+  company: z.string().optional(),
+});
+
+type Contact = z.infer<typeof contactSchema> & {
   id: string
-  name: string
-  email: string
-  phone: string | null
-  company: string | null
   createdAt: string
   updatedAt: string
+}
+
+type EditingContact = {
+  id: string
+  data: Partial<Contact>
 }
 
 export default function ContactsPage() {
@@ -61,13 +83,11 @@ export default function ContactsPage() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState('')
-  const [editingContact, setEditingContact] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<Partial<Contact>>({})
-  const inputRefs = useRef<{ [key: string]: React.RefObject<HTMLInputElement> }>({
-    name: React.createRef(),
-    email: React.createRef(),
-    phone: React.createRef(),
-    company: React.createRef(),
+  const [editingContact, setEditingContact] = useState<EditingContact | null>(null)
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(null)
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<Contact>({
+    resolver: zodResolver(contactSchema)
   });
 
   useEffect(() => {
@@ -89,29 +109,20 @@ export default function ContactsPage() {
   }
 
   const handleEditClick = (contact: Contact) => {
-    setEditingContact(contact.id);
-    setTimeout(() => {
-      inputRefs.current['name']?.current?.focus();
-    }, 0);
+    setEditingContact({ id: contact.id, data: { ...contact } });
+    reset(contact);
   }
 
-  const handleEditSubmit = async () => {
+  const handleEditSubmit = async (data: Contact) => {
     if (!editingContact) return;
 
-    const updatedContact = {
-      name: inputRefs.current['name']?.current?.value || '',
-      email: inputRefs.current['email']?.current?.value || '',
-      phone: inputRefs.current['phone']?.current?.value || '',
-      company: inputRefs.current['company']?.current?.value || '',
-    };
-
     try {
-      const response = await fetch(`/api/contacts/${editingContact}`, {
+      const response = await fetch(`/api/contacts/${editingContact.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedContact),
+        body: JSON.stringify(data),
       });
       if (!response.ok) {
         throw new Error('Failed to update contact');
@@ -127,24 +138,22 @@ export default function ContactsPage() {
 
   const handleEditCancel = () => {
     setEditingContact(null)
-    setEditForm({})
+    reset()
   }
 
   const handleDeleteContact = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this contact?')) {
-      try {
-        const response = await fetch(`/api/contacts/${id}`, {
-          method: 'DELETE',
-        })
-        if (!response.ok) {
-          throw new Error('Failed to delete contact')
-        }
-        fetchContacts()
-        toast.success('Contact deleted successfully')
-      } catch (error) {
-        console.error('Error deleting contact:', error)
-        toast.error('Failed to delete contact. Please try again.')
+    try {
+      const response = await fetch(`/api/contacts/${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete contact')
       }
+      await fetchContacts()
+      toast.success('Contact deleted successfully')
+    } catch (error) {
+      console.error('Error deleting contact:', error)
+      toast.error('Failed to delete contact. Please try again.')
     }
   }
 
@@ -164,14 +173,20 @@ export default function ContactsPage() {
       },
       cell: ({ row }) => {
         const contact = row.original
-        return editingContact === contact.id ? (
-          <Input
-            name="name"
-            defaultValue={contact.name}
-            ref={inputRefs.current['name']}
-          />
-        ) : (
-          contact.name
+        return (
+          <div>
+            {editingContact?.id === contact.id ? (
+              <Input
+                {...register('name')}
+                defaultValue={contact.name}
+              />
+            ) : (
+              contact.name
+            )}
+            {editingContact?.id === contact.id && errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+            )}
+          </div>
         )
       },
     },
@@ -190,14 +205,20 @@ export default function ContactsPage() {
       },
       cell: ({ row }) => {
         const contact = row.original
-        return editingContact === contact.id ? (
-          <Input
-            name="email"
-            defaultValue={contact.email || ''}
-            ref={inputRefs.current['email']}
-          />
-        ) : (
-          contact.email
+        return (
+          <div>
+            {editingContact?.id === contact.id ? (
+              <Input
+                {...register('email')}
+                defaultValue={contact.email}
+              />
+            ) : (
+              contact.email
+            )}
+            {editingContact?.id === contact.id && errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+            )}
+          </div>
         )
       },
     },
@@ -216,14 +237,20 @@ export default function ContactsPage() {
       },
       cell: ({ row }) => {
         const contact = row.original
-        return editingContact === contact.id ? (
-          <Input
-            name="phone"
-            defaultValue={contact.phone || ''}
-            ref={inputRefs.current['phone']}
-          />
-        ) : (
-          contact.phone
+        return (
+          <div>
+            {editingContact?.id === contact.id ? (
+              <Input
+                {...register('phone')}
+                defaultValue={contact.phone || ''}
+              />
+            ) : (
+              contact.phone
+            )}
+            {editingContact?.id === contact.id && errors.phone && (
+              <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+            )}
+          </div>
         )
       },
     },
@@ -242,14 +269,20 @@ export default function ContactsPage() {
       },
       cell: ({ row }) => {
         const contact = row.original
-        return editingContact === contact.id ? (
-          <Input
-            name="company"
-            defaultValue={contact.company || ''}
-            ref={inputRefs.current['company']}
-          />
-        ) : (
-          contact.company
+        return (
+          <div>
+            {editingContact?.id === contact.id ? (
+              <Input
+                {...register('company')}
+                defaultValue={contact.company || ''}
+              />
+            ) : (
+              contact.company
+            )}
+            {editingContact?.id === contact.id && errors.company && (
+              <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
+            )}
+          </div>
         )
       },
     },
@@ -277,13 +310,13 @@ export default function ContactsPage() {
         const contact = row.original
         return (
           <div className="text-right">
-            {editingContact === contact.id ? (
+            {editingContact?.id === contact.id ? (
               <div className="flex justify-end space-x-2">
-                <Button onClick={handleEditSubmit} size="sm">
-                  <Check className="h-4 w-4" />
+                <Button onClick={handleSubmit(handleEditSubmit)} size="sm">
+                  Save
                 </Button>
                 <Button onClick={handleEditCancel} size="sm" variant="outline">
-                  <X className="h-4 w-4" />
+                  Cancel
                 </Button>
               </div>
             ) : (
@@ -300,9 +333,28 @@ export default function ContactsPage() {
                     Edit
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleDeleteContact(contact.id)}>
-                    Delete
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        Delete
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the contact
+                          and remove the data from our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteContact(contact.id)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
