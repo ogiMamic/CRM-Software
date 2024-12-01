@@ -432,11 +432,18 @@ export default function ContactsPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <Link href="/contacts/add">
-              <Button>
-                <PlusIcon className="mr-2 h-4 w-4" /> Add Contact
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <Link href="/contacts/import-export" className="w-full sm:w-auto mb-2 sm:mb-0">
+                <Button variant="outline" className="w-full">
+                  Import/Export
+                </Button>
+              </Link>
+              <Link href="/contacts/add" className="w-full sm:w-auto">
+                <Button className="w-full">
+                  <PlusIcon className="mr-2 h-4 w-4" /> Add Contact
+                </Button>
+              </Link>
+            </div>
           </div>
           <div className="rounded-md border">
             <Table>
