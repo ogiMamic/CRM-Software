@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { PlusIcon, FilterIcon, MoreHorizontal, ArrowUpDown } from 'lucide-react'
+import { PlusIcon, FilterIcon, MoreHorizontal, ArrowUpDown, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { toast, Toaster } from 'sonner'
@@ -78,13 +78,12 @@ type EditingContact = {
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }])
+  const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState('')
   const [editingContact, setEditingContact] = useState<EditingContact | null>(null)
-  const [deletingContactId, setDeletingContactId] = useState<string | null>(null)
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<Contact>({
     resolver: zodResolver(contactSchema)
@@ -157,7 +156,55 @@ export default function ContactsPage() {
     }
   }
 
+  const handleDeleteMultipleContacts = async () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    const selectedIds = selectedRows.map(row => row.original.id);
+
+    try {
+      const response = await fetch('/api/contacts/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      await fetchContacts();
+      toast.success(`${result.count} contacts deleted successfully`);
+      table.toggleAllRowsSelected(false);
+    } catch (error) {
+      console.error('Error deleting contacts:', error);
+      toast.error(`Failed to delete contacts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const columns: ColumnDef<Contact>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "name",
       header: ({ column }) => {
@@ -413,7 +460,7 @@ export default function ContactsPage() {
                 <PopoverContent className="w-[200px]">
                   <div className="space-y-2">
                     <h3 className="font-medium">Show columns:</h3>
-                    {table.getAllColumns().filter(column => column.id !== 'actions').map((column) => {
+                    {table.getAllColumns().filter(column => column.id !== 'actions' && column.id !== 'select').map((column) => {
                       return (
                         <div key={column.id} className="flex items-center space-x-2">
                           <Checkbox
@@ -489,7 +536,7 @@ export default function ContactsPage() {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex items-center justify-between space-x-2 py-4">
             <div className="flex-1 text-sm text-muted-foreground">
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -513,8 +560,35 @@ export default function ContactsPage() {
               </Button>
             </div>
           </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={table.getFilteredSelectedRowModel().rows.length === 0}
+              >
+                Delete Selected
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the selected contacts
+                  and remove their data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteMultipleContacts}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
   )
 }
+

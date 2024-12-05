@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { toast, Toaster } from 'sonner';
 import Papa from 'papaparse';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 type Contact = {
   name: string;
@@ -29,32 +31,44 @@ export default function ImportExportPage() {
         const text = await file.text();
         Papa.parse(text, {
           header: true,
+          skipEmptyLines: true,
           complete: async (results) => {
+            if (results.errors.length > 0) {
+              const errorMessage = results.errors.map(
+                (err) => `Row ${err.row}: ${err.message}`
+              ).join("; ");
+              toast.error(`CSV parsing failed: ${errorMessage}. Please check your file format and try again.`);
+              setImporting(false);
+              return;
+            }
+
             const contacts = results.data as Contact[];
-            // Validate contacts here if needed
-            const response = await fetch('/api/contacts/import', {
-              method: 'POST',
+            const response = await fetch("/api/contacts/import", {
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
               },
               body: JSON.stringify(contacts),
             });
+
             if (!response.ok) {
-              throw new Error('Failed to import contacts');
+              throw new Error("Failed to import contacts");
             }
+
             const data = await response.json();
             toast.success(`Successfully imported ${data.count} contacts`);
-            router.refresh(); // Refresh the page to update the contacts list
+            router.refresh();
+            setImporting(false);
           },
           error: (error: Error) => {
-            console.error('Error parsing CSV:', error);
-            toast.error('Failed to parse CSV file');
+            console.error("Error parsing CSV:", error);
+            toast.error(`Failed to parse CSV file: ${error.message}. Please check your file format and try again.`);
+            setImporting(false);
           },
         });
       } catch (error) {
-        console.error('Error importing contacts:', error);
-        toast.error('Failed to import contacts');
-      } finally {
+        console.error("Error importing contacts:", error);
+        toast.error("Failed to import contacts: " + (error instanceof Error ? error.message : String(error)));
         setImporting(false);
       }
     }
@@ -83,7 +97,7 @@ export default function ImportExportPage() {
       toast.success('Contacts exported successfully');
     } catch (error) {
       console.error('Error exporting contacts:', error);
-      toast.error('Failed to export contacts');
+      toast.error('Failed to export contacts: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setExporting(false);
     }
@@ -100,23 +114,40 @@ export default function ImportExportPage() {
         <CardContent className="space-y-6">
           <div>
             <h2 className="text-xl font-semibold mb-2">Import Contacts</h2>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mb-2">
               <Input 
                 type="file" 
                 onChange={handleImport} 
                 accept=".csv" 
                 disabled={importing}
               />
-              {importing && <p className="text-sm text-muted-foreground">Importing...</p>}
+              {importing && (
+                <div className="flex items-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Importing...</span>
+                </div>
+              )}
             </div>
+            {importing && (
+              <div className="mt-2">
+                <Progress value={100} className="w-full animate-pulse" />
+              </div>
+            )}
             <p className="text-sm text-muted-foreground mt-1">
-              Upload a CSV file with columns: name, email, phone (optional), company (optional)
+              Upload a CSV file with columns: name (required), email (required), phone (optional), company (optional)
             </p>
           </div>
           <div>
             <h2 className="text-xl font-semibold mb-2">Export Contacts</h2>
             <Button onClick={handleExport} disabled={exporting}>
-              {exporting ? 'Exporting...' : 'Export to CSV'}
+              {exporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                'Export to CSV'
+              )}
             </Button>
           </div>
         </CardContent>
