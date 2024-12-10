@@ -1,63 +1,67 @@
-import { useState, useEffect } from 'react'
-import { DataTable } from '@/components/ui/data-table'
-import { ColumnDef } from "@tanstack/react-table"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 type InventoryItem = {
-  id: string
-  name: string
-  type: string
-  quantity: number
-  status: 'Available' | 'Low Stock' | 'Out of Stock'
-}
+  id: string;
+  name: string;
+  type: string;
+  quantity: number;
+  status: "Available" | "Low Stock" | "Out of Stock";
+};
 
 const columns: ColumnDef<InventoryItem>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "type", header: "Type" },
   { accessorKey: "quantity", header: "Quantity" },
-  { 
-    accessorKey: "status", 
+  {
+    accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
+      const status = row.getValue("status") as string;
       return (
-        <Badge variant={status === 'Available' ? 'success' : status === 'Low Stock' ? 'warning' : 'destructive'}>
+        <Badge variant={status === "Available" ? "success" : status === "Low Stock" ? "warning" : "destructive"}>
           {status}
         </Badge>
-      )
+      );
     },
   },
-]
+];
 
 export function InventoryStatus() {
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [filters, setFilters] = useState({
-    type: 'all',
-    status: 'all',
-  })
+    type: "all",
+    status: "all",
+  });
 
   useEffect(() => {
-    // Simulating API call
-    setTimeout(() => {
-      const mockInventory: InventoryItem[] = [
-        { id: "1", name: "Painting - Landscape", type: "Painting", quantity: 5, status: "Available" },
-        { id: "2", name: "Rosary", type: "Religious Item", quantity: 2, status: "Low Stock" },
-        { id: "3", name: "Bible", type: "Book", quantity: 0, status: "Out of Stock" },
-        { id: "4", name: "Sculpture - Abstract", type: "Sculpture", quantity: 3, status: "Available" },
-      ]
-      setInventory(mockInventory)
-    }, 1000)
-  }, [])
+    const fetchInventory = async () => {
+      try {
+        const response = await fetch("/api/inventory");
+        if (!response.ok) {
+          throw new Error("Failed to fetch inventory data");
+        }
+        const data: InventoryItem[] = await response.json();
+        setInventory(data);
+      } catch (error) {
+        console.error("Error fetching inventory:", error);
+      }
+    };
 
-  const filteredInventory = inventory.filter(item => {
+    fetchInventory();
+  }, []);
+
+  const filteredInventory = inventory.filter((item) => {
     return (
-      (filters.type === 'all' || item.type === filters.type) &&
-      (filters.status === 'all' || item.status === filters.status)
-    )
-  })
+      (filters.type === "all" || item.type === filters.type) &&
+      (filters.status === "all" || item.status === filters.status)
+    );
+  });
 
   return (
     <div className="space-y-4">
@@ -65,9 +69,9 @@ export function InventoryStatus() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="type">Item Type</Label>
-          <Select 
-            value={filters.type} 
-            onValueChange={(value) => setFilters({...filters, type: value})}
+          <Select
+            value={filters.type}
+            onValueChange={(value) => setFilters({ ...filters, type: value })}
           >
             <SelectTrigger id="type">
               <SelectValue placeholder="Select type" />
@@ -83,9 +87,9 @@ export function InventoryStatus() {
         </div>
         <div>
           <Label htmlFor="status">Status</Label>
-          <Select 
-            value={filters.status} 
-            onValueChange={(value) => setFilters({...filters, status: value})}
+          <Select
+            value={filters.status}
+            onValueChange={(value) => setFilters({ ...filters, status: value })}
           >
             <SelectTrigger id="status">
               <SelectValue placeholder="Select status" />
@@ -101,5 +105,5 @@ export function InventoryStatus() {
       </div>
       <DataTable columns={columns} data={filteredInventory} />
     </div>
-  )
+  );
 }
