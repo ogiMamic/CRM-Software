@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { format } from "date-fns"
-import { CalendarIcon, PlusIcon, Pencil, Trash2 } from 'lucide-react'
+import { CalendarIcon, PlusIcon, Pencil, Trash2, X } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from "@tanstack/react-table"
@@ -21,67 +21,103 @@ type Task = {
   id: string
   title: string
   status: 'To Do' | 'In Progress' | 'Completed'
-  assignee: string
-  dueDate: Date | undefined
+  assigneeId: string
+  assignee: {
+    id: string
+    name: string
+  }
+  dueDate: Date | null
 }
 
-function DatePickerDemo({ date, setDate }: { date: Date | undefined, setDate: (date: Date | undefined) => void }) {
+type TeamMember = {
+  id: string
+  name: string
+}
+
+function DatePickerDemo({ date, setDate }: { date: Date | null, setDate: (date: Date | null) => void }) {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-[280px] justify-start text-left font-normal",
-            !date && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>Pick a date</span>}
+    <div className="flex items-center space-x-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "w-[240px] justify-start text-left font-normal",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, "PPP") : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            date={date || new Date()}
+            onDateChange={setDate}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      {date && (
+        <Button variant="ghost" size="icon" onClick={() => setDate(null)}>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Clear date</span>
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   )
 }
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [filters, setFilters] = useState({
     status: 'all',
     assignee: '',
-    dueDate: undefined as Date | undefined,
+    dueDate: null as Date | null,
   })
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
-  const [newTask, setNewTask] = useState<Omit<Task, 'id'>>({
+  const [newTask, setNewTask] = useState<Omit<Task, 'id' | 'assignee'>>({
     title: '',
     status: 'To Do',
-    assignee: '',
-    dueDate: undefined,
+    assigneeId: '',
+    dueDate: null,
   })
 
   useEffect(() => {
-    // Simulating API call
-    setTimeout(() => {
-      const mockTasks: Task[] = [
-        { id: "1", title: "Create marketing plan", status: "In Progress", assignee: "John Doe", dueDate: new Date("2023-12-15") },
-        { id: "2", title: "Update website content", status: "To Do", assignee: "Jane Smith", dueDate: new Date("2023-12-20") },
-        { id: "3", title: "Prepare quarterly report", status: "Completed", assignee: "Mike Johnson", dueDate: new Date("2023-12-10") },
-        { id: "4", title: "Client meeting", status: "To Do", assignee: "John Doe", dueDate: new Date("2023-12-18") },
-        { id: "5", title: "Team brainstorming session", status: "In Progress", assignee: "Jane Smith", dueDate: new Date("2023-12-22") },
-      ]
-      setTasks(mockTasks)
-    }, 1000)
+    fetchTasks()
+    fetchTeamMembers()
   }, [])
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks')
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks')
+      }
+      const data = await response.json()
+      setTasks(data)
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+      toast.error('Failed to load tasks. Please try again.')
+    }
+  }
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch('/api/team-members')
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members')
+      }
+      const data = await response.json()
+      setTeamMembers(data)
+    } catch (error) {
+      console.error('Error fetching team members:', error)
+      toast.error('Failed to load team members. Please try again.')
+    }
+  }
 
   const columns: ColumnDef<Task>[] = [
     { accessorKey: "title", header: "Title" },
@@ -97,13 +133,16 @@ export function TaskList() {
         )
       },
     },
-    { accessorKey: "assignee", header: "Assignee" },
+    { 
+      accessorKey: "assignee.name", 
+      header: "Assignee",
+    },
     { 
       accessorKey: "dueDate", 
       header: "Due Date",
       cell: ({ row }) => {
-        const date = row.getValue("dueDate") as Date | undefined
-        return date ? format(date, "PPP") : "Not set"
+        const date = row.getValue("dueDate") as Date | null
+        return date ? format(new Date(date), "PPP") : "Not set"
       },
     },
     {
@@ -129,51 +168,90 @@ export function TaskList() {
   const filteredTasks = tasks.filter(task => {
     return (
       (filters.status === 'all' || task.status === filters.status) &&
-      (filters.assignee === '' || task.assignee.toLowerCase().includes(filters.assignee.toLowerCase())) &&
-      (!filters.dueDate || (task.dueDate && task.dueDate.toDateString() === filters.dueDate.toDateString()))
+      (filters.assignee === '' || task.assignee.name.toLowerCase().includes(filters.assignee.toLowerCase())) &&
+      (!filters.dueDate || (task.dueDate && new Date(task.dueDate).toDateString() === filters.dueDate.toDateString()))
     )
   })
 
-  const handleAddTask = () => {
-    const task: Task = {
-      id: (tasks.length + 1).toString(),
-      ...newTask,
+  const handleAddTask = async () => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to add task')
+      }
+      await fetchTasks()
+      setIsAddTaskOpen(false)
+      resetNewTask()
+      toast.success('Task added successfully!')
+    } catch (error) {
+      console.error('Error adding task:', error)
+      toast.error('Failed to add task. Please try again.')
     }
-    setTasks([...tasks, task])
-    setIsAddTaskOpen(false)
-    resetNewTask()
-    toast.success('Task added successfully!')
   }
 
   const handleEditTask = (task: Task) => {
     setCurrentTask(task)
-    setNewTask(task)
+    setNewTask({
+      title: task.title,
+      status: task.status,
+      assigneeId: task.assigneeId,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null,
+    })
     setIsEditTaskOpen(true)
   }
 
-  const handleUpdateTask = () => {
+  const handleUpdateTask = async () => {
     if (!currentTask) return
-    const updatedTasks = tasks.map(task => 
-      task.id === currentTask.id ? { ...task, ...newTask } : task
-    )
-    setTasks(updatedTasks)
-    setIsEditTaskOpen(false)
-    resetNewTask()
-    toast.success('Task updated successfully!')
+    try {
+      const response = await fetch(`/api/tasks/${currentTask.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to update task')
+      }
+      const updatedTask = await response.json()
+      setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task))
+      setIsEditTaskOpen(false)
+      resetNewTask()
+      toast.success('Task updated successfully!')
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast.error('Failed to update task. Please try again.')
+    }
   }
 
-  const handleDeleteTask = (id: string) => {
-    const updatedTasks = tasks.filter(task => task.id !== id)
-    setTasks(updatedTasks)
-    toast.success('Task deleted successfully!')
+  const handleDeleteTask = async (id: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete task')
+      }
+      await fetchTasks()
+      toast.success('Task deleted successfully!')
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      toast.error('Failed to delete task. Please try again.')
+    }
   }
 
   const resetNewTask = () => {
     setNewTask({
       title: '',
       status: 'To Do',
-      assignee: '',
-      dueDate: undefined,
+      assigneeId: '',
+      dueDate: null,
     })
     setCurrentTask(null)
   }
@@ -193,7 +271,7 @@ export function TaskList() {
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
-            <TaskForm task={newTask} setTask={setNewTask} onSubmit={handleAddTask} />
+            <TaskForm task={newTask} setTask={setNewTask} onSubmit={handleAddTask} teamMembers={teamMembers} />
           </DialogContent>
         </Dialog>
       </CardHeader>
@@ -242,7 +320,7 @@ export function TaskList() {
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
           </DialogHeader>
-          <TaskForm task={newTask} setTask={setNewTask} onSubmit={handleUpdateTask} />
+          <TaskForm task={newTask} setTask={setNewTask} onSubmit={handleUpdateTask} teamMembers={teamMembers} />
         </DialogContent>
       </Dialog>
     </Card>
@@ -250,12 +328,13 @@ export function TaskList() {
 }
 
 type TaskFormProps = {
-  task: Omit<Task, 'id'>
-  setTask: React.Dispatch<React.SetStateAction<Omit<Task, 'id'>>>
+  task: Omit<Task, 'id' | 'assignee'>
+  setTask: React.Dispatch<React.SetStateAction<Omit<Task, 'id' | 'assignee'>>>
   onSubmit: () => void
+  teamMembers: TeamMember[]
 }
 
-function TaskForm({ task, setTask, onSubmit }: TaskFormProps) {
+function TaskForm({ task, setTask, onSubmit, teamMembers }: TaskFormProps) {
   return (
     <div className="grid gap-4 py-4">
       <div className="grid grid-cols-4 items-center gap-4">
@@ -291,12 +370,19 @@ function TaskForm({ task, setTask, onSubmit }: TaskFormProps) {
         <Label htmlFor="assignee" className="text-right">
           Assignee
         </Label>
-        <Input
-          id="assignee"
-          value={task.assignee}
-          onChange={(e) => setTask({...task, assignee: e.target.value})}
-          className="col-span-3"
-        />
+        <Select
+          value={task.assigneeId}
+          onValueChange={(value) => setTask({...task, assigneeId: value})}
+        >
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Select assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            {teamMembers.map((member) => (
+              <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="taskDueDate" className="text-right">
@@ -304,7 +390,7 @@ function TaskForm({ task, setTask, onSubmit }: TaskFormProps) {
         </Label>
         <div className="col-span-3">
           <DatePickerDemo
-            date={task.dueDate}
+            date={task.dueDate ? new Date(task.dueDate) : null}
             setDate={(date) => setTask({...task, dueDate: date})}
           />
         </div>
@@ -313,3 +399,6 @@ function TaskForm({ task, setTask, onSubmit }: TaskFormProps) {
     </div>
   )
 }
+
+export default TaskList;
+

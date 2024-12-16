@@ -1,51 +1,58 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  console.log("Seeding database...");
+  console.log('Starting seeding process...')
 
-  const inventoryItems = [
-    {
-      name: "Painting - Landscape",
-      type: "Painting",
-      quantity: 5,
-      status: "Available",
-    },
-    {
-      name: "Rosary",
-      type: "Religious Item",
-      quantity: 2,
-      status: "Low Stock",
-    },
-    {
-      name: "Bible",
-      type: "Book",
-      quantity: 0,
-      status: "Out of Stock",
-    },
-    {
-      name: "Sculpture - Abstract",
-      type: "Sculpture",
-      quantity: 3,
-      status: "Available",
-    },
-  ];
+  // Seed team members
+  const teamMembers = [
+    { name: 'John Doe', email: 'john@example.com' },
+    { name: 'Jane Smith', email: 'jane@example.com' },
+    { name: 'Bob Johnson', email: 'bob@example.com' },
+    { name: 'Alice Williams', email: 'alice@example.com' },
+  ]
 
-  for (const item of inventoryItems) {
-    await prisma.inventoryItem.create({
-      data: item,
-    });
+  console.log('Seeding team members...')
+  for (const member of teamMembers) {
+    const createdMember = await prisma.teamMember.upsert({
+      where: { email: member.email }, // Proverava da li već postoji član sa istim emailom
+      update: {}, // Ako već postoji, ništa se ne menja
+      create: member, // Ako ne postoji, kreira novog člana
+    })
+    console.log(`Created or found team member: ${createdMember.name}`)
   }
 
-  console.log("Seeding completed!");
+  // Fetch created team members to use their IDs for tasks
+  const createdMembers = await prisma.teamMember.findMany()
+
+  // Seed tasks
+  const tasks = [
+    { title: 'Develop new feature', status: 'In Progress', assigneeId: createdMembers[0].id, dueDate: new Date('2023-12-31') },
+    { title: 'Fix critical bug', status: 'To Do', assigneeId: createdMembers[1].id, dueDate: new Date('2023-12-25') },
+    { title: 'Write documentation', status: 'Completed', assigneeId: createdMembers[2].id, dueDate: new Date('2023-12-20') },
+    { title: 'Refactor codebase', status: 'In Progress', assigneeId: createdMembers[3].id, dueDate: new Date('2024-01-15') },
+    { title: 'Implement user feedback', status: 'To Do', assigneeId: createdMembers[0].id, dueDate: new Date('2024-01-10') },
+  ]
+
+  console.log('Seeding tasks...')
+  for (const task of tasks) {
+    const createdTask = await prisma.task.upsert({
+      where: { id: task.assigneeId }, // Ovdje koristimo assigneeId za proveru
+      update: {}, // Ako zadatak postoji, ništa se ne menja
+      create: task, // Ako zadatak ne postoji, kreiraj ga
+    })
+    console.log(`Created or found task: ${createdTask.title}`)
+  }
+
+  console.log('Seeding completed successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error('Error during seeding:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

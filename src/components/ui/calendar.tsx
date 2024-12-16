@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils"
 interface CalendarProps {
   date: Date
   onDateChange: (date: Date) => void
+  initialFocus?: boolean // Dodao sam opcioni initialFocus prop
 }
 
-export function Calendar({ date, onDateChange }: CalendarProps) {
+export function Calendar({ date, onDateChange, initialFocus }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState<Date>(date || new Date())
 
   React.useEffect(() => {
@@ -33,6 +34,15 @@ export function Calendar({ date, onDateChange }: CalendarProps) {
     const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
     onDateChange(newDate)
   }
+
+  React.useEffect(() => {
+    if (initialFocus) {
+      const firstDayButton = document.querySelector('[data-day="1"]');
+      if (firstDayButton) {
+        (firstDayButton as HTMLElement).focus();
+      }
+    }
+  }, [initialFocus, currentMonth]);
 
   return (
     <div className="p-4">
@@ -69,6 +79,7 @@ export function Calendar({ date, onDateChange }: CalendarProps) {
                 : ""
             )}
             onClick={() => handleDateClick(day)}
+            data-day={day}
           >
             {day}
           </Button>
