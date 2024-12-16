@@ -1,12 +1,12 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface CalendarProps {
   date: Date
   onDateChange: (date: Date) => void
-  initialFocus?: boolean // Dodao sam opcioni initialFocus prop
+  initialFocus?: boolean
 }
 
 export function Calendar({ date, onDateChange, initialFocus }: CalendarProps) {
@@ -22,30 +22,42 @@ export function Calendar({ date, onDateChange, initialFocus }: CalendarProps) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const emptyDays = Array.from({ length: firstDayOfMonth }, (_, i) => i)
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
   }
 
-  const handleNextMonth = () => {
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
   }
 
-  const handleDateClick = (day: number) => {
+  const handleDateClick = (e: React.MouseEvent, day: number) => {
+    e.preventDefault()
+    e.stopPropagation()
     const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
     onDateChange(newDate)
   }
 
   React.useEffect(() => {
     if (initialFocus) {
-      const firstDayButton = document.querySelector('[data-day="1"]');
+      const firstDayButton = document.querySelector('[data-day="1"]')
       if (firstDayButton) {
-        (firstDayButton as HTMLElement).focus();
+        (firstDayButton as HTMLElement).focus()
       }
     }
-  }, [initialFocus, currentMonth]);
+  }, [initialFocus, currentMonth])
 
   return (
-    <div className="p-4">
+    <div 
+      className="p-4 rounded-md shadow-lg"
+      style={{ position: 'relative', zIndex: 1000, pointerEvents: 'auto' }}
+      onClick={(e) => e.stopPropagation()} 
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+    >
       <div className="flex justify-between items-center mb-4">
         <Button variant="outline" size="icon" onClick={handlePrevMonth}>
           <ChevronLeft className="h-4 w-4" />
@@ -78,7 +90,7 @@ export function Calendar({ date, onDateChange, initialFocus }: CalendarProps) {
                 ? "bg-primary text-primary-foreground"
                 : ""
             )}
-            onClick={() => handleDateClick(day)}
+            onClick={(e) => handleDateClick(e, day)}
             data-day={day}
           >
             {day}
@@ -88,3 +100,4 @@ export function Calendar({ date, onDateChange, initialFocus }: CalendarProps) {
     </div>
   )
 }
+

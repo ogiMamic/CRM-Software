@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from '@/components/ui/calendar'
-import { toast } from 'sonner'
+import { toast, Toaster } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Task = {
@@ -35,9 +35,11 @@ type TeamMember = {
 }
 
 function DatePickerDemo({ date, setDate }: { date: Date | null, setDate: (date: Date | null) => void }) {
+  const [open, setOpen] = useState(false)
+
   return (
     <div className="flex items-center space-x-2">
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
@@ -45,21 +47,45 @@ function DatePickerDemo({ date, setDate }: { date: Date | null, setDate: (date: 
               "w-[240px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
+            onClick={(e) => {
+              e.preventDefault()
+              setOpen(true)
+            }}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date ? format(date, "PPP") : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            date={date || new Date()}
-            onDateChange={setDate}
-            initialFocus
-          />
+        <PopoverContent 
+          className="w-auto p-0" 
+          onMouseDown={(e) => e.preventDefault()}
+          style={{ position: 'relative', zIndex: 100 }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <Calendar
+              date={date || new Date()}
+              onDateChange={(newDate) => {
+                setDate(newDate)
+                setOpen(false)
+              }}
+              initialFocus
+            />
+          </div>
         </PopoverContent>
       </Popover>
       {date && (
-        <Button variant="ghost" size="icon" onClick={() => setDate(null)}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={(e) => { 
+            e.stopPropagation()
+            e.preventDefault()
+            setDate(null)
+          }}
+        >
           <X className="h-4 w-4" />
           <span className="sr-only">Clear date</span>
         </Button>
@@ -258,6 +284,7 @@ export function TaskList() {
 
   return (
     <Card className="w-full">
+      <Toaster position="top-right" />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-2xl font-bold">Task List</CardTitle>
         <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
@@ -316,7 +343,7 @@ export function TaskList() {
         </div>
       </CardContent>
       <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
-        <DialogContent>
+        <DialogContent style={{ zIndex: 99 }}>
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
           </DialogHeader>
