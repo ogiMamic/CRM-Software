@@ -6,9 +6,20 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { toast } from 'sonner'
+import { toast, Toaster } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Pencil, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type TeamMember = {
   id: string
@@ -57,10 +68,29 @@ export function TeamManagement() {
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit member</span>
             </Button>
-            <Button variant="outline" size="icon" onClick={() => handleDeleteMember(member.id)}>
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete member</span>
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete member</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the team member
+                    and remove their data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleDeleteMember(member.id)}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )
       },
@@ -145,9 +175,13 @@ export function TeamManagement() {
 
   return (
     <Card className="w-full">
+      <Toaster position="top-right" />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-2xl font-bold">Team Management</CardTitle>
-        <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+        <Dialog open={isAddMemberOpen} onOpenChange={(open) => {
+          setIsAddMemberOpen(open)
+          if (open) resetNewMember()
+        }}>
           <DialogTrigger asChild>
             <Button>Add Team Member</Button>
           </DialogTrigger>
@@ -210,4 +244,6 @@ function TeamMemberForm({ member, setMember, onSubmit }: TeamMemberFormProps) {
     </div>
   )
 }
+
+export default TeamManagement;
 

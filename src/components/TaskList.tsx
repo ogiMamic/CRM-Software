@@ -59,7 +59,7 @@ function DatePickerDemo({ date, setDate }: { date: Date | null, setDate: (date: 
         <PopoverContent 
           className="w-auto p-0" 
           onMouseDown={(e) => e.preventDefault()}
-          style={{ position: 'relative', zIndex: 100 }}
+          style={{ position: 'relative', zIndex: 9999 }}
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
@@ -343,7 +343,7 @@ export function TaskList() {
         </div>
       </CardContent>
       <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
-        <DialogContent style={{ zIndex: 99 }}>
+        <DialogContent style={{ zIndex: 9998 }}>
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
           </DialogHeader>
@@ -386,7 +386,7 @@ function TaskForm({ task, setTask, onSubmit, teamMembers }: TaskFormProps) {
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent style={{ zIndex: 9999 }}>
             <SelectItem value="To Do">To Do</SelectItem>
             <SelectItem value="In Progress">In Progress</SelectItem>
             <SelectItem value="Completed">Completed</SelectItem>
@@ -404,7 +404,7 @@ function TaskForm({ task, setTask, onSubmit, teamMembers }: TaskFormProps) {
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select assignee" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent style={{ zIndex: 9999 }}>
             {teamMembers.map((member) => (
               <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
             ))}
