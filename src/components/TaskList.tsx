@@ -16,6 +16,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { toast, Toaster } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type Task = {
   id: string
@@ -99,9 +110,9 @@ export function TaskList() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [filters, setFilters] = useState({
     status: 'all',
-    assignee: '',
     dueDate: null as Date | null,
   })
+  const [assigneeFilter, setAssigneeFilter] = useState('all')
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
@@ -181,10 +192,29 @@ export function TaskList() {
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit task</span>
             </Button>
-            <Button variant="outline" size="icon" onClick={() => handleDeleteTask(task.id)}>
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete task</span>
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete task</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the task and remove
+                    its data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )
       },
@@ -194,7 +224,7 @@ export function TaskList() {
   const filteredTasks = tasks.filter(task => {
     return (
       (filters.status === 'all' || task.status === filters.status) &&
-      (filters.assignee === '' || task.assignee.name.toLowerCase().includes(filters.assignee.toLowerCase())) &&
+      (assigneeFilter === 'all' || task.assigneeId === assigneeFilter) &&
       (!filters.dueDate || (task.dueDate && new Date(task.dueDate).toDateString() === filters.dueDate.toDateString()))
     )
   })
@@ -324,12 +354,20 @@ export function TaskList() {
             </div>
             <div>
               <Label htmlFor="assignee">Assignee</Label>
-              <Input
-                id="assignee"
-                placeholder="Filter by assignee"
-                value={filters.assignee}
-                onChange={(e) => setFilters({...filters, assignee: e.target.value})}
-              />
+              <Select 
+                value={assigneeFilter} 
+                onValueChange={(value) => setAssigneeFilter(value)}
+              >
+                <SelectTrigger id="assignee">
+                  <SelectValue placeholder="Filter by assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Assignees</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="dueDate">Due Date</Label>
