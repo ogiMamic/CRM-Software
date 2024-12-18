@@ -76,14 +76,16 @@ function DatePickerDemo({ date, setDate }: { date: Date | null, setDate: (date: 
             onClick={(e) => e.stopPropagation()} 
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <Calendar
-              date={date || new Date()}
-              onDateChange={(newDate) => {
-                setDate(newDate)
-                setOpen(false)
-              }}
-              initialFocus
-            />
+            <div className="h-[352px]">
+              <Calendar
+                date={date || new Date()}
+                onDateChange={(newDate) => {
+                  setDate(newDate)
+                  setOpen(false)
+                }}
+                initialFocus
+              />
+            </div>
           </div>
         </PopoverContent>
       </Popover>
@@ -225,7 +227,7 @@ export function TaskList() {
     return (
       (filters.status === 'all' || task.status === filters.status) &&
       (assigneeFilter === 'all' || task.assigneeId === assigneeFilter) &&
-      (!filters.dueDate || (task.dueDate && new Date(task.dueDate).toDateString() === filters.dueDate.toDateString()))
+      (!filters.dueDate || (task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) <= filters.dueDate.setHours(0, 0, 0, 0)))
     )
   })
 
