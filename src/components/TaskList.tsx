@@ -27,18 +27,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-
-type Task = {
-  id: string
-  title: string
-  status: 'To Do' | 'In Progress' | 'Completed'
-  assigneeId: string
-  assignee: {
-    id: string
-    name: string
-  }
-  dueDate: Date | null
-}
+import { Switch } from "@/components/ui/switch"
+import { KanbanView } from './kanban-veiw'
+import { Task } from "@/types/task"
 
 type TeamMember = {
   id: string
@@ -124,6 +115,7 @@ export function TaskList() {
     assigneeId: '',
     dueDate: null,
   })
+  const [isKanbanView, setIsKanbanView] = useState(false)
 
   useEffect(() => {
     fetchTasks()
@@ -224,11 +216,10 @@ export function TaskList() {
   ]
 
   const filteredTasks = tasks.filter(task => {
-    return (
-      (filters.status === 'all' || task.status === filters.status) &&
-      (assigneeFilter === 'all' || task.assigneeId === assigneeFilter) &&
-      (!filters.dueDate || (task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) <= filters.dueDate.setHours(0, 0, 0, 0)))
-    )
+    const statusMatch = filters.status === 'all' || task.status === filters.status
+    const assigneeMatch = assigneeFilter === 'all' || task.assigneeId === assigneeFilter
+    const dueDateMatch = !filters.dueDate || (task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) <= filters.dueDate.setHours(0, 0, 0, 0))
+    return statusMatch && assigneeMatch && dueDateMatch
   })
 
   const handleAddTask = async () => {
@@ -314,6 +305,37 @@ export function TaskList() {
     setCurrentTask(null)
   }
 
+  const onDragEnd = async (result: any) => {
+    if (!result.destination) return
+
+    const { source, destination, draggableId } = result
+    if (source.droppableId !== destination.droppableId) {
+      const updatedTask = tasks.find(task => task.id === draggableId)
+      if (updatedTask) {
+        const newStatus = destination.droppableId as 'To Do' | 'In Progress' | 'Completed'
+        try {
+          const response = await fetch(`/api/tasks/${draggableId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ...updatedTask, status: newStatus }),
+          })
+          if (!response.ok) {
+            throw new Error('Failed to update task status')
+          }
+          setTasks(tasks.map(task =>
+            task.id === draggableId ? { ...task, status: newStatus } : task
+          ))
+          toast.success('Task status updated successfully!')
+        } catch (error) {
+          console.error('Error updating task status:', error)
+          toast.error('Failed to update task status. Please try again.')
+        }
+      }
+    }
+  }
+
   return (
     <Card className="w-full">
       <Toaster position="top-right" />
@@ -379,7 +401,21 @@ export function TaskList() {
               />
             </div>
           </div>
-          <DataTable columns={columns} data={filteredTasks} />
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="view-toggle"
+              checked={isKanbanView}
+              onCheckedChange={setIsKanbanView}
+            />
+            <Label htmlFor="view-toggle">
+              {isKanbanView ? 'Kanban View' : 'Table View'}
+            </Label>
+          </div>
+          {isKanbanView ? (
+            <KanbanView tasks={filteredTasks} onDragEnd={onDragEnd} />
+          ) : (
+            <DataTable columns={columns} data={filteredTasks} />
+          )}
         </div>
       </CardContent>
       <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>

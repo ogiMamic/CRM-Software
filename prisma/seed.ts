@@ -28,11 +28,11 @@ async function main() {
 
   // Seed tasks
   const tasks = [
-    { title: 'Develop new feature', status: 'In Progress', assigneeId: createdMembers[0].id, dueDate: new Date('2023-12-31') },
-    { title: 'Fix critical bug', status: 'To Do', assigneeId: createdMembers[1].id, dueDate: new Date('2023-12-25') },
+    { title: 'Develop new feature', status: 'In Progress', assigneeId: createdMembers[0].id, dueDate: new Date('2024-12-31') },
+    { title: 'Fix critical bug', status: 'To Do', assigneeId: createdMembers[1].id, dueDate: new Date('2024-12-25') },
     { title: 'Write documentation', status: 'Completed', assigneeId: createdMembers[2].id, dueDate: new Date('2023-12-20') },
-    { title: 'Refactor codebase', status: 'In Progress', assigneeId: createdMembers[3].id, dueDate: new Date('2024-01-15') },
-    { title: 'Implement user feedback', status: 'To Do', assigneeId: createdMembers[0].id, dueDate: new Date('2024-01-10') },
+    { title: 'Refactor codebase', status: 'In Progress', assigneeId: createdMembers[3].id, dueDate: new Date('2025-01-15') },
+    { title: 'Implement user feedback', status: 'To Do', assigneeId: createdMembers[0].id, dueDate: new Date('2025-01-10') },
   ]
 
   console.log('Seeding tasks...')
