@@ -27,8 +27,37 @@ model Contact {
   email     String   @unique
   phone     String?
   company   String?
+  country   String?
+  donor     Donor?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Donor {
+  id        String    @id @default(cuid())
+  contact   Contact   @relation(fields: [contactId], references: [id])
+  contactId String    @unique
+  type      String    // Individual, Corporate, etc.
+  status    String    // Active, Inactive, etc.
+  donations Donation[]
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Donation {
+  id          String   @id @default(cuid())
+  amount      Decimal
+  currency    String   @default("USD")
+  type        String   // One-time, Monthly, Annual
+  status      String   // Completed, Pending, Failed
+  donor       Donor    @relation(fields: [donorId], references: [id])
+  donorId     String
+  date        DateTime
+  campaign    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model InventoryItem {

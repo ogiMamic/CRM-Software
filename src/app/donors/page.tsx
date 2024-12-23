@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { DonorList } from '@/components/DonorList'
 import { AddDonor } from '@/components/AddDonor'
+import { AddDonation } from '@/components/AddDonation'
 import { MonthlyGoals } from '@/components/MonthlyGoals'
 import { AutomaticNotifications } from '@/components/AutomaticNotifications'
+import { DonationList } from '@/components/DonationList'
 
 export default function DonorsPage() {
   const [activeTab, setActiveTab] = useState("list")
@@ -16,9 +18,11 @@ export default function DonorsPage() {
       <Breadcrumbs items={[{ label: 'Donors', href: '/donors' }]} />
       <h1 className="text-3xl font-bold mb-6">Donors</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="list">Donor List</TabsTrigger>
           <TabsTrigger value="add">Add Donor</TabsTrigger>
+          <TabsTrigger value="addDonation">Add Donation</TabsTrigger>
+          <TabsTrigger value="donations">Donations</TabsTrigger>
           <TabsTrigger value="goals">Monthly Goals</TabsTrigger>
           <TabsTrigger value="notifications">Automatic Notifications</TabsTrigger>
         </TabsList>
@@ -27,6 +31,12 @@ export default function DonorsPage() {
         </TabsContent>
         <TabsContent value="add">
           <AddDonor />
+        </TabsContent>
+        <TabsContent value="addDonation">
+          <AddDonation />
+        </TabsContent>
+        <TabsContent value="donations">
+          <DonationList />
         </TabsContent>
         <TabsContent value="goals">
           <MonthlyGoals />
@@ -38,3 +48,4 @@ export default function DonorsPage() {
     </div>
   )
 }
+
